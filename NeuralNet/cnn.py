@@ -7,6 +7,7 @@ from torch.utils.data import Dataset, DataLoader
 from Dataset import MnistDataset, SplitDataSet, viewImage
 from matplotlib import pyplot as plt
 import argparse
+import csv
 
 def get_default_device():
     if torch.cuda.is_available():
@@ -22,9 +23,9 @@ class Net(nn.Module):
     def __init__(self):
         super().__init__()
         #Linear(input output)
-        self.conv1 = nn.Conv2d(in_channels=1,out_channels=32,kernel_size=3)
-        self.conv2 = nn.Conv2d(in_channels=32,out_channels=64,kernel_size=3) 
-        self.fc1 = nn.Linear(64*5*5,125)
+        self.conv1 = nn.Conv2d(in_channels=1,out_channels=64,kernel_size=3)
+        self.conv2 = nn.Conv2d(in_channels=64,out_channels=128,kernel_size=3) 
+        self.fc1 = nn.Linear(128*5*5,125)
         self.fc2 = nn.Linear(125,10)
 
     def forward(self, input):
@@ -37,9 +38,9 @@ class Net(nn.Module):
         input = F.relu(input)
         input = F.max_pool2d(input,kernel_size=2,stride=2) 
         #reshape input
-        input = input.view(-1,64*5*5)
+        input = input.view(-1,128*5*5)
         #first linear layer
-        input = F.dropout(self.fc1(input),.25)    
+        input = F.dropout(self.fc1(input), .35)    
         input = F.relu(input)
         #second linear layer
         output = self.fc2(input)
@@ -103,7 +104,7 @@ def main():
         #define training hyper parameters
         learningRate = .001
         epoch = 50
-        batchSize = 150
+        batchSize = 250
         split = .2
 
         model = Net().to(device)
@@ -124,7 +125,7 @@ def main():
             losses.append(runningLoss)
             if e % 10 == 9:
                 print("Epoch {0} - loss: {1:4f}".format(e + 1, runningLoss))
-        #test the model
+
         accuracy = test(model, testDataLoader)
         print("Accuracy: {0:4f}".format(accuracy))
 
@@ -142,21 +143,30 @@ def main():
 
     elif args.test:
         weightsPath = "../Weights/{0}.pth".format(args.weights) if args.weights is not None else '../Weights/weights.pth'
+        resultsPath = "../Results/submission.csv"
+        #load the model
         model = Net().to(device)
         model.load_state_dict(torch.load(weightsPath))
         model.eval()
-
         #load dataset to evaluate
         dataset = MnistDataset(args.dataset)
 
-        try:
-            for (data, _) in dataset:
-                img = data.view(-1,1,28,28).to(device)
-                output = model(img)
-                print("Predicton: {0}".format(torch.argmax(output)))
-                viewImage(data)
-        except KeyboardInterrupt:
-            pass
+        predictions = []
+
+        #get all predictions
+        for (data, _) in dataset:
+            img = data.view(-1,1,28,28).to(device)
+            output = model(img)
+            predictions.append(torch.argmax(output).item())
+        #save predictions to csv file
+
+        with open(resultsPath, mode='w',newline='') as file :
+            writer = csv.writer(file,delimiter=',', quotechar='"',quoting=csv.QUOTE_MINIMAL)
+            writer.writerow(['ImageId','Label'])
+            for i, label in enumerate(predictions):
+                writer.writerow([i+1,label])
+
+
 
 if __name__ == '__main__':
     main()
