@@ -5,9 +5,14 @@ import os
 import matplotlib.pyplot as plt
 import torch 
 from torch.utils.data import Dataset
+from matplotlib import pyplot as plt
 from pathlib import Path
 
 DATA_PATH = '../Data/'
+
+def viewImage(img):
+        plt.imshow(img.view(28,28))
+        plt.show()
 
 def loadPickle(fileName):
     with open(fileName, 'rb') as f:
@@ -42,9 +47,11 @@ class MnistDataset(Dataset):
         #if pkl file exists for the dataset, saves like 30 seconds
         if os.path.isfile(DATA_PATH + dataFile + '.pkl'):
             self.labels, self.data = loadPickle(DATA_PATH + dataFile + '.pkl')
+            print("loaded {0} dataset from .pkl file".format(dataFile))
         #no pkl file exists, so load the csv and create a pkl file
         else:
-            self.labels, self.data = loadCSV(DATA_PATH + dataFile + '.csv', True)
+            self.labels, self.data = loadCSV(DATA_PATH + dataFile + '.csv', False)
+            print("loaded {0} dataset from .csv file".format(dataFile))
 
     def __len__(self):
         return len(self.data)
@@ -52,4 +59,4 @@ class MnistDataset(Dataset):
     def __getitem__(self,idx):
         sample = self.data[idx,:]
         label = self.labels[idx]
-        return torch.Tensor(sample), label
+        return torch.Tensor(sample), torch.Tensor(label).view(-1,1)
