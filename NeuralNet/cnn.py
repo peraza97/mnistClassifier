@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F 
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
-from Dataset import MnistDataset, viewImage
+from Dataset import MnistDataset, SplitDataSet, viewImage
 from matplotlib import pyplot as plt
 import argparse
 
@@ -79,7 +79,6 @@ def test(model, dataLoader):
             outputMaxes = [torch.argmax(i) for i in output]
             actualMaxes = [torch.max(i) for i in labels]
             for i,j in zip(outputMaxes,actualMaxes):
-                print(i, j)
                 if i == j:
                     correct += 1
                 total += 1
@@ -93,16 +92,20 @@ def main():
 
     parser = argparse.ArgumentParser(description='Train or evaluate a dataset')
     parser.add_argument('--train', action='store_true', help="training mode")
-    parser.add_argument('--eval', action='store_true', help="evaluation mode")
-    parser.add_argument('-w','--weightsPath', help="path that will save/load weights")
-    parser.add_argument('-d', '--dataset',required=True,help="name of dataset that will be loaded. Must be located in ./Data folder")
+    parser.add_argument('--test', action='store_true', help="test mode")
+    parser.add_argument('-p', '--showPlot', action='store_true', help="plot metrics after training model")
+    parser.add_argument('-s', '--saveModel', action='store_true', help="save the weights")    
+    parser.add_argument('-d', '--dataset', help="name of dataset that will be loaded. Must be located in ./Data folder")
     args = parser.parse_args()
+
+    weightsPath = '../Weights/weights.pth'
 
     if args.train:
         #define training hyper parameters
         learningRate = .001
         epoch = 50
-        batchSize = 2
+        batchSize = 150
+        split = .2
 
         model = Net().to(device)
         #loss/ optimization
@@ -110,19 +113,48 @@ def main():
         optimizer = optim.Adam(model.parameters(),lr=learningRate)
 
         #load datasets
-        trainDataset = MnistDataset('dummy')
-        #testDataset = MnistDataset('test')
+        dataset = MnistDataset('train')
+        trainDataset, testDataset = SplitDataSet(dataset,split)
         trainDataLoader = DataLoader(trainDataset, batch_size=batchSize, shuffle=True)
-        #testDataLoader = DataLoader(testDataset, batch_size=batchSize, shuffle=False)
+        testDataLoader = DataLoader(testDataset, batch_size=batchSize, shuffle=False)
 
+        losses = []
+        #epoch loop
         for e in range(1, epoch + 1):
             runningLoss = train(model, trainDataLoader, optimizer, lossFunction)
+            losses.append(runningLoss)
             if e % 10 == 9:
                 print("Epoch {0} - loss: {1:4f}".format(e, runningLoss))
+        #test the model
+        accuracy = test(model, testDataLoader)
+        print("Accuracy: {0:4f}".format(accuracy))
+
+        if args.showPlot:
+            fig, (ax1, ax2) = plt.subplots(1, 2)
+            ax1.plot(np.array(losses), 'r')
+            ax1.set(xlabel='Epoch')
+            ax1.set_title('Loss')
+            plt.show()
+        
+        if args.saveModel:
+            torch.save(model.state_dict(),weightsPath)
 
 
-    elif args.eval:
-        pass
+    elif args.test:
+        model = Net().to(device)
+        model.load_state_dict(torch.load(weightsPath))
+        model.eval()
+
+        #load dataset to evaluate
+        dataset = MnistDataset(args.dataset)
+        try:
+            for i, (data, _) in enumerate(dataset):
+                img = data.view(-1,1,28,28).to(device)
+                output = model(img)
+                print("Predicton: {0}".format(torch.argmax(output)))
+                viewImage(data)
+        except KeyboardInterrupt:
+            pass
 
 if __name__ == '__main__':
     main()

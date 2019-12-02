@@ -4,7 +4,7 @@ import pickle
 import os
 import matplotlib.pyplot as plt
 import torch 
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, random_split
 from matplotlib import pyplot as plt
 from pathlib import Path
 
@@ -60,3 +60,8 @@ class MnistDataset(Dataset):
         sample = self.data[idx,:]
         label = self.labels[idx]
         return torch.Tensor(sample), torch.Tensor(label).view(-1,1)
+
+def SplitDataSet(dataset, split):
+    testSize = int(split * len(dataset))
+    trainSize = len(dataset) - testSize
+    return random_split(dataset, [trainSize, testSize])
