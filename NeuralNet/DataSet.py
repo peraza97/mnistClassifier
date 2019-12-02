@@ -3,6 +3,8 @@ import numpy as np
 import pickle
 import os
 import matplotlib.pyplot as plt
+import torch 
+from torch.utils.data import Dataset
 from pathlib import Path
 
 DATA_PATH = '../Data/'
@@ -27,8 +29,9 @@ def loadCSV(fileName,save):
     labelIdx = np.where(features == 'label')
     labels = rawData[1:,labelIdx].astype(float)
     #turn the data into floats
-    data = rawData[1:,1:].astype(float)
-
+    data = rawData[1:,:].astype(float)
+    #delete the column that corresponds to the label(if exists)
+    data = np.delete(data,labelIdx,1)
     #do we want to pikle this data
     if save:
         filename = Path(fileName)
@@ -38,19 +41,21 @@ def loadCSV(fileName,save):
 
     return labels, data
 
-name = 'test'
+class MnistDataset(Dataset):
+    def __init__(self, dataFile): 
+        self.data = None
+        self.labels = None
+        #if pkl file exists for the dataset, saves like 30 seconds
+        if os.path.isfile(DATA_PATH + dataFile + '.pkl'):
+            self.labels, self.data = loadPickle(DATA_PATH + dataFile + '.pkl')
+        #no pkl file exists, so load the csv and create a pkl file
+        else:
+            self.labels, self.data = loadCSV(DATA_PATH + dataFile + '.csv', True)
 
-labels = None
-data = None
-if os.path.isfile(DATA_PATH + name + '.pkl'):
-    labels, data = loadPickle(DATA_PATH + name + '.pkl')
-    print("from pickle")
-else:
-    labels, data = loadCSV(DATA_PATH + name + '.csv',True)
-    print("from csv")
+    def __len__(self):
+        return len(self.data)
 
-for i, image in enumerate(data):
-    if i > 2:
-        quit()
-    print('label: {0}'.format(labels[i].item()))
-    showNumber(image)
+    def __getitem__(self,idx):
+        sample = self.data[idx,:]
+        label = self.labels[idx]
+        return torch.Tensor(sample), label
