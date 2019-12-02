@@ -39,7 +39,7 @@ class Net(nn.Module):
         #reshape input
         input = input.view(-1,64*5*5)
         #first linear layer
-        input = self.fc1(input)      
+        input = F.dropout(self.fc1(input),.25)    
         input = F.relu(input)
         #second linear layer
         output = self.fc2(input)
@@ -94,11 +94,10 @@ def main():
     parser.add_argument('--train', action='store_true', help="training mode")
     parser.add_argument('--test', action='store_true', help="test mode")
     parser.add_argument('-p', '--showPlot', action='store_true', help="plot metrics after training model")
-    parser.add_argument('-s', '--saveModel', action='store_true', help="save the weights")    
+    parser.add_argument('-s', '--saveModel', action='store_true', help="save the weights")   
+    parser.add_argument('-w', '--weights', help="load weights file in Weights foler")  
     parser.add_argument('-d', '--dataset', help="name of dataset that will be loaded. Must be located in ./Data folder")
     args = parser.parse_args()
-
-    weightsPath = '../Weights/weights.pth'
 
     if args.train:
         #define training hyper parameters
@@ -124,7 +123,7 @@ def main():
             runningLoss = train(model, trainDataLoader, optimizer, lossFunction)
             losses.append(runningLoss)
             if e % 10 == 9:
-                print("Epoch {0} - loss: {1:4f}".format(e, runningLoss))
+                print("Epoch {0} - loss: {1:4f}".format(e + 1, runningLoss))
         #test the model
         accuracy = test(model, testDataLoader)
         print("Accuracy: {0:4f}".format(accuracy))
@@ -137,18 +136,21 @@ def main():
             plt.show()
         
         if args.saveModel:
+            weightsPath = "../Weights/weights{0:.0f}.pth".format(int(accuracy*100))
             torch.save(model.state_dict(),weightsPath)
 
 
     elif args.test:
+        weightsPath = "../Weights/{0}.pth".format(args.weights) if args.weights is not None else '../Weights/weights.pth'
         model = Net().to(device)
         model.load_state_dict(torch.load(weightsPath))
         model.eval()
 
         #load dataset to evaluate
         dataset = MnistDataset(args.dataset)
+
         try:
-            for i, (data, _) in enumerate(dataset):
+            for (data, _) in dataset:
                 img = data.view(-1,1,28,28).to(device)
                 output = model(img)
                 print("Predicton: {0}".format(torch.argmax(output)))
