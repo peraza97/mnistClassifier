@@ -9,12 +9,6 @@ from pathlib import Path
 
 DATA_PATH = '../Data/'
 
-def showNumber(image):
-    #assume image is numpy array
-    image = image.reshape(28,28)
-    plt.imshow(image)
-    plt.show()
-
 def loadPickle(fileName):
     with open(fileName, 'rb') as f:
         pickleObj = pickle.load(f)
