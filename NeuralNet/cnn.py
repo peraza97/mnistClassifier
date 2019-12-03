@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F 
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
-from Dataset import MnistDataset, SplitDataSet, viewImage
+from Dataset import MnistDataset, SplitDataSet
 from matplotlib import pyplot as plt
 import argparse
 import csv
@@ -152,21 +152,17 @@ def main():
         dataset = MnistDataset(args.dataset)
 
         predictions = []
-
         #get all predictions
         for (data, _) in dataset:
             img = data.view(-1,1,28,28).to(device)
             output = model(img)
             predictions.append(torch.argmax(output).item())
         #save predictions to csv file
-
         with open(resultsPath, mode='w',newline='') as file :
             writer = csv.writer(file,delimiter=',', quotechar='"',quoting=csv.QUOTE_MINIMAL)
             writer.writerow(['ImageId','Label'])
             for i, label in enumerate(predictions):
                 writer.writerow([i+1,label])
-
-
 
 if __name__ == '__main__':
     main()

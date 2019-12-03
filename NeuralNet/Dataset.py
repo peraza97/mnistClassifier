@@ -8,16 +8,18 @@ from torch.utils.data import Dataset, random_split
 from matplotlib import pyplot as plt
 from pathlib import Path
 
-DATA_PATH = '../Data/'
-
-def viewImage(img):
+def viewTensorImage(img):
         plt.imshow(img.view(28,28))
         plt.show()
+
+def viewNumpyImage(img):
+    plt.imshow(img.reshape(28,28))
+    plt.show()
 
 def loadPickle(fileName):
     with open(fileName, 'rb') as f:
         pickleObj = pickle.load(f)
-        return pickleObj["labels"], pickleObj["data"]
+        return pickleObj["data"], pickleObj["labels"]
 
 def loadCSV(fileName,save):
     #generate numpy array from csv file
@@ -37,21 +39,27 @@ def loadCSV(fileName,save):
         pickleFileName = filename.with_suffix('.pkl')
         filehandler = open(pickleFileName, 'wb') 
         pickle.dump({"data":data, "labels":labels}, filehandler)
+    return data, labels
 
-    return labels, data
+def loadDataset(dataFile):
+    DATA_PATH = '../Data/'
+    labels = None
+    data = None
+    #if pkl file exists for the dataset, saves like 30 seconds
+    if os.path.isfile(DATA_PATH + dataFile + '.pkl'):
+        data, labels = loadPickle(DATA_PATH + dataFile + '.pkl')
+        print("loaded {0} dataset from .pkl file".format(dataFile))
+    #no pkl file exists, so load the csv and create a pkl file
+    else:
+        data, labels = loadCSV(DATA_PATH + dataFile + '.csv', False)
+        print("loaded {0} dataset from .csv file".format(dataFile))
+    return data, labels
 
 class MnistDataset(Dataset):
     def __init__(self, dataFile): 
         self.data = None
         self.labels = None
-        #if pkl file exists for the dataset, saves like 30 seconds
-        if os.path.isfile(DATA_PATH + dataFile + '.pkl'):
-            self.labels, self.data = loadPickle(DATA_PATH + dataFile + '.pkl')
-            print("loaded {0} dataset from .pkl file".format(dataFile))
-        #no pkl file exists, so load the csv and create a pkl file
-        else:
-            self.labels, self.data = loadCSV(DATA_PATH + dataFile + '.csv', False)
-            print("loaded {0} dataset from .csv file".format(dataFile))
+        self.data, self.labels = loadDataset(dataFile)
 
     def __len__(self):
         return len(self.data)
@@ -59,9 +67,10 @@ class MnistDataset(Dataset):
     def __getitem__(self,idx):
         sample = self.data[idx,:]
         label = self.labels[idx]
-        return torch.Tensor(sample), torch.Tensor(label).view(-1,1)
+        return torch.Tensor(sample), torch.Tensor(label)
 
 def SplitDataSet(dataset, split):
     testSize = int(split * len(dataset))
     trainSize = len(dataset) - testSize
     return random_split(dataset, [trainSize, testSize])
+
