@@ -146,7 +146,7 @@ def main():
         resultsPath = "../Results/submission.csv"
         #load the model
         model = Net().to(device)
-        model.load_state_dict(torch.load(weightsPath))
+        model.load_state_dict(torch.load(weightsPath,map_location=device))
         model.eval()
         #load dataset to evaluate
         dataset = MnistDataset(args.dataset)
