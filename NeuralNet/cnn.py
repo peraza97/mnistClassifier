@@ -19,6 +19,15 @@ def get_default_device():
 
 device = get_default_device()
 
+def dimReduction(W, F, P, S):
+    '''
+    W - dimension size of image
+    F -  dimendion size of the filter
+    S - Stride size
+    P - Padding size
+    '''
+    return (W - F + 2*P)//S + 1
+
 class Net(nn.Module):
     def __init__(self):
         super().__init__()
