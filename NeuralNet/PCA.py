@@ -3,8 +3,8 @@ from sklearn.decomposition import PCA
 from matplotlib import pyplot as plt
 
 def PCAanalysis(k):
-    colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'b', 'g', 'r']
-    shapes = ['.', ',', 'o', 'v', '^', '<', '>', '+', 'h', 'D']
+    colors = ['b', 'g', '#1a3335', 'c', 'm', 'y', 'k', 'y', '#911FF1', 'r']
+    shapes = ['.', '8', 'o', 'X', '+', '<', '>', '^', 'h', '*']
 
     data, labels = loadDataset('train')
     pca = PCA(n_components=2)
@@ -13,7 +13,7 @@ def PCAanalysis(k):
 
     for num in range(0,10):
         idxs = [i for i, label in enumerate(labels) if num == label] 
-        plt.scatter(dataPca[idxs, 0], dataPca[idxs,1], label=num, alpha=.3, marker=shapes[num], color=colors[num])
+        plt.scatter(dataPca[idxs, 0], dataPca[idxs,1], label=num, alpha=.7, marker=shapes[num], color=colors[num])
         plt.xlabel("Principle Component 1")
         plt.ylabel("Principle Component 2")       
     plt.legend()
